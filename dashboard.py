@@ -238,35 +238,35 @@ _PAGE = r"""<!doctype html>
 <header>
   <span class="dot"></span>
   <h1>Bug Bounty — Control Panel</h1>
-  <span class="sub" id="sub">baglaniyor…</span>
+  <span class="sub" id="sub">connecting…</span>
 </header>
 <div class="wrap">
 
   <div class="tiles" id="tiles"></div>
 
   <div class="controls">
-    <input type="text" id="domain" placeholder="hedef domain (orn: bykea.com) — SADECE scope icinde"
+    <input type="text" id="domain" placeholder="target domain (e.g. example.com) — IN-SCOPE ONLY"
            autocomplete="off" spellcheck="false">
     <label class="ck"><input type="checkbox" id="nonuclei"> --no-nuclei</label>
     <label class="ck"><input type="checkbox" id="nobrowser"> --no-browser</label>
-    <button id="scanBtn">Tarama Baslat</button>
+    <button id="scanBtn">Run Scan</button>
   </div>
   <div class="hint" id="hint"></div>
 
   <div class="grid">
     <div class="card">
-      <h2>Recon Bulgulari <span class="n" id="fN">0</span></h2>
-      <div id="findings"><div class="empty">yukleniyor…</div></div>
+      <h2>Recon Findings <span class="n" id="fN">0</span></h2>
+      <div id="findings"><div class="empty">loading…</div></div>
     </div>
     <div class="card">
-      <h2>Triyaj Kuyrugu <span class="n" id="qN">0</span></h2>
-      <div id="queue"><div class="empty">yukleniyor…</div></div>
+      <h2>Triage Queue <span class="n" id="qN">0</span></h2>
+      <div id="queue"><div class="empty">loading…</div></div>
     </div>
   </div>
 
   <div class="card" style="margin-top:14px">
-    <h2>Canli Subdomainler <span class="n" id="sN">0</span></h2>
-    <div id="subs"><div class="empty">yukleniyor…</div></div>
+    <h2>Live Subdomains <span class="n" id="sN">0</span></h2>
+    <div id="subs"><div class="empty">loading…</div></div>
   </div>
 
 </div>
@@ -287,8 +287,8 @@ async function tick(){
     renderFindings(fnd);
     renderQueue(q);
     renderSubs(subs);
-    $("sub").textContent = "canli • " + new Date().toLocaleTimeString();
-  }catch(e){ $("sub").textContent = "baglanti yok"; }
+    $("sub").textContent = "live • " + new Date().toLocaleTimeString();
+  }catch(e){ $("sub").textContent = "offline"; }
 }
 
 function renderTiles(s){
@@ -297,18 +297,18 @@ function renderTiles(s){
   const sevChips = ["critical","high","medium","low","info"]
     .map(k=>`<span class="chip c-${k}">${k[0].toUpperCase()}: ${sev[k]||0}</span>`).join("");
   $("tiles").innerHTML = `
-    <div class="tile"><div class="k">Yakalanan Istek</div><div class="v">${s.requests_total||0}</div></div>
-    <div class="tile"><div class="k">Secret Bulgu</div><div class="v">${s.secrets||0}</div></div>
-    <div class="tile"><div class="k">Subdomain (canli)</div><div class="v">${s.subs_alive||0}<span style="font-size:14px;color:var(--muted)"> / ${s.subs_total||0}</span></div></div>
-    <div class="tile"><div class="k">Triyaj Bekleyen</div><div class="v">${s.pending_triage||0}</div></div>
-    <div class="tile"><div class="k">Raporlanan</div><div class="v">${s.reported||0}</div></div>
-    <div class="tile"><div class="k">Bulgu Severity</div><div class="sev-row">${sevChips}</div></div>`;
+    <div class="tile"><div class="k">Captured Requests</div><div class="v">${s.requests_total||0}</div></div>
+    <div class="tile"><div class="k">Secrets</div><div class="v">${s.secrets||0}</div></div>
+    <div class="tile"><div class="k">Subdomains (alive)</div><div class="v">${s.subs_alive||0}<span style="font-size:14px;color:var(--muted)"> / ${s.subs_total||0}</span></div></div>
+    <div class="tile"><div class="k">Triage Queue</div><div class="v">${s.pending_triage||0}</div></div>
+    <div class="tile"><div class="k">Reported</div><div class="v">${s.reported||0}</div></div>
+    <div class="tile"><div class="k">By Severity</div><div class="sev-row">${sevChips}</div></div>`;
 }
 
 function renderFindings(rows){
   $("fN").textContent = rows.length||0;
-  if(!rows.length){ $("findings").innerHTML = '<div class="empty">henuz recon bulgusu yok</div>'; return; }
-  let html = '<table><thead><tr><th>#</th><th>Bulgu</th><th>Konum</th></tr></thead><tbody>';
+  if(!rows.length){ $("findings").innerHTML = '<div class="empty">no recon findings yet</div>'; return; }
+  let html = '<table><thead><tr><th>#</th><th>Finding</th><th>Location</th></tr></thead><tbody>';
   for(const r of rows){
     const sev = (r.severity||"info");
     const isNew = !prevFindingIds.has(r.id);
@@ -324,8 +324,8 @@ function renderFindings(rows){
 
 function renderQueue(rows){
   $("qN").textContent = rows.length||0;
-  if(!rows.length){ $("queue").innerHTML = '<div class="empty">analiz bekleyen yok</div>'; return; }
-  let html = '<table><thead><tr><th>#</th><th>Karar</th><th>Istek</th></tr></thead><tbody>';
+  if(!rows.length){ $("queue").innerHTML = '<div class="empty">nothing awaiting triage</div>'; return; }
+  let html = '<table><thead><tr><th>#</th><th>Verdict</th><th>Request</th></tr></thead><tbody>';
   for(const r of rows){
     html += `<tr><td class="src">${r.id}</td><td>${esc(r.ai_verdict||"-")}</td>`+
       `<td class="mono">${esc(r.method)} ${esc((r.url||"").slice(0,70))}</td></tr>`;
@@ -336,8 +336,8 @@ function renderQueue(rows){
 
 function renderSubs(rows){
   $("sN").textContent = rows.length||0;
-  if(!rows.length){ $("subs").innerHTML = '<div class="empty">henuz subdomain yok — once bir tarama calistir</div>'; return; }
-  let html = '<table><thead><tr><th>Subdomain</th><th>Kod</th><th>Tech</th></tr></thead><tbody>';
+  if(!rows.length){ $("subs").innerHTML = '<div class="empty">no subdomains yet — run a scan first</div>'; return; }
+  let html = '<table><thead><tr><th>Subdomain</th><th>Code</th><th>Tech</th></tr></thead><tbody>';
   for(const r of rows){
     html += `<tr><td class="mono">${esc(r.subdomain)}</td>`+
       `<td class="src">${r.status_code||""}</td>`+
@@ -349,16 +349,16 @@ function renderSubs(rows){
 
 async function startScan(){
   const domain = $("domain").value.trim();
-  if(!domain){ $("hint").textContent = "Bir domain gir."; return; }
-  $("scanBtn").disabled = true; $("hint").textContent = "baslatiliyor…";
+  if(!domain){ $("hint").textContent = "Enter a domain."; return; }
+  $("scanBtn").disabled = true; $("hint").textContent = "starting…";
   try{
     const res = await j("/dash/scan", {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({domain, no_nuclei:$("nonuclei").checked, no_browser:$("nobrowser").checked})
     });
-    if(res.ok){ $("hint").textContent = "✓ Tarama basladi: "+res.domain+" — bulgular asagida canli belirecek."; }
-    else { $("hint").textContent = "✗ "+(res.error||"reddedildi"); }
-  }catch(e){ $("hint").textContent = "istek basarisiz"; }
+    if(res.ok){ $("hint").textContent = "✓ Scan started: "+res.domain+" — findings will appear below live."; }
+    else { $("hint").textContent = "✗ "+(res.error||"rejected"); }
+  }catch(e){ $("hint").textContent = "request failed"; }
   $("scanBtn").disabled = false;
 }
 
