@@ -1,0 +1,18 @@
+{
+  "id": "bugbounty-bridge",
+  "name": "BugBounty AI Bridge",
+  "version": "0.1.0",
+  "description": "Proxy'lenen her isteği yerel FastAPI Merkezi Omurga'ya (dedup + secret scan) webhook olarak iletir.",
+  "author": {
+    "name": "mykokko"
+  },
+  "plugins": [
+    {
+      "kind": "backend",
+      "id": "bugbounty-bridge-backend",
+      "name": "BugBounty Bridge Backend",
+      "runtime": "javascript",
+      "entrypoint": "backend/script.js"
+    }
+  ]
+}
